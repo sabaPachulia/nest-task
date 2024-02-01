@@ -1,20 +1,24 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from './users/users.module';
-import { ReportsModule } from './reports/reports.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
-import { Report } from './reports/report.entity';
+import { jwtConstants } from './users/constants';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [User, Report],
+      entities: [User],
       synchronize: true,
     }),
+    JwtModule.register({
+      global: true,
+      secret: jwtConstants.secret,
+      signOptions: { expiresIn: '60s' },
+    }),
     UsersModule,
-    ReportsModule,
   ],
 })
 export class AppModule {}
