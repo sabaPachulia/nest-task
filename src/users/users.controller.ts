@@ -4,18 +4,20 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
-  Query,
   NotFoundException,
   UseInterceptors,
   ClassSerializerInterceptor,
   Put,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 @Controller('/auth')
 export class UsersController {
@@ -26,8 +28,10 @@ export class UsersController {
     return this.usersService.getAllUsers();
   }
 
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
   @Post('/signup')
-  createUser(@Body() body: CreateUserDto) {
+  async createUser(@Body() body: CreateUserDto) {
     return this.usersService.create(
       body.firstName,
       body.lastName,
@@ -63,6 +67,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
+    console.log(`Changing password for user ${id}`);
     return this.usersService.changePassword(
       parseInt(id),
       changePasswordDto.newPassword,

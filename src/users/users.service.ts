@@ -1,24 +1,31 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
-
+  constructor(
+    @InjectRepository(User) private repo: Repository<User>,
+    private jwtService: JwtService
+  ) {}
   getAllUsers() {
     return this.repo.find();
   }
 
-  create(
+  async create(
     firstName: string,
     lastName: string,
     phoneNumber: string,
     email: string,
     password: string,
-  ) {
+  ): Promise<{ access_token: string }> {
+    const existingUser = await this.repo.findOne({ where: { email } });
+    if (existingUser) {
+      throw new ConflictException('A user with this email already exists');
+    }
+
     const user = this.repo.create({
       firstName,
       lastName,
@@ -26,7 +33,14 @@ export class UsersService {
       email,
       password,
     });
-    return this.repo.save(user);
+
+    const savedUser = await this.repo.save(user);
+
+    const payload = { sub: savedUser.id };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
   }
 
   findOne(id: number) {
@@ -56,13 +70,14 @@ export class UsersService {
 
   async changePassword(id: number, newPassword: string) {
     const user = await this.findOne(id);
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    user.password = hashedPassword;
-    return this.repo.save(user);
+    user.password = newPassword;
+
+    const savedUser = await this.repo.save(user);
+    console.log('update user', savedUser);
+    return savedUser;
   }
 }
