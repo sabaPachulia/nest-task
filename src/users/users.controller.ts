@@ -11,34 +11,28 @@ import {
   Put,
   HttpCode,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UsersService } from './users.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  ChangePasswordDto,
+} from '../../libs/users-lib/src/dto';
+import { UsersLibService } from 'libs/users-lib';
 
 @Controller('/auth')
 export class UsersController {
-  constructor(public usersService: UsersService) {}
+  constructor(private readonly usersService: UsersLibService) {}
 
   @Get('users')
   getAllUsers() {
     return this.usersService.getAllUsers();
   }
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('/signup')
-  async createUser(@Body() body: CreateUserDto) {
-    return this.usersService.create(
-      body.firstName,
-      body.lastName,
-      body.phoneNumber,
-      body.email,
-      body.password,
-    );
+  async registerUser(@Body() body: CreateUserDto) {
+    return this.usersService.registerUser(body);
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

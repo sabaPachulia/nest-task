@@ -1,32 +1,48 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './user.entity';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { User } from '../entities';
 import { JwtService } from '@nestjs/jwt';
+import {
+  IUsersRepository,
+  RegisterUserData,
+  RegisterUserSuccessResponse,
+} from '../interfaces';
+import { UsersRepository } from '../repositories';
+import { UsersLibModuleTokens } from '../constants';
 
 @Injectable()
-export class UsersService {
+export class UsersLibService {
   constructor(
-    @InjectRepository(User) private repo: Repository<User>,
-    private jwtService: JwtService
+    @Inject(UsersLibModuleTokens.usersRepository)
+    private readonly usersRepository: IUsersRepository,
+    private jwtService: JwtService,
   ) {}
+
   getAllUsers() {
-    return this.repo.find();
+    return this.usersRepository.findOne({ id: '' });
   }
 
-  async create(
-    firstName: string,
-    lastName: string,
-    phoneNumber: string,
-    email: string,
-    password: string,
-  ): Promise<{ access_token: string }> {
-    const existingUser = await this.repo.findOne({ where: { email } });
+  async registerUser(
+    credentials: RegisterUserData,
+  ): Promise<RegisterUserSuccessResponse> {
+    const { email, firstName, lastName, password, phoneNumber } = credentials;
+
+    const existingUser = await this.usersRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
+      // TODO refactor error response
       throw new ConflictException('A user with this email already exists');
     }
 
-    const user = this.repo.create({
+    // Hashing password - "nika1123" => hashing => "dadadadadadad1313131ad",
+
+    const user = this.usersRepository.create({
       firstName,
       lastName,
       phoneNumber,
@@ -36,7 +52,7 @@ export class UsersService {
 
     const savedUser = await this.repo.save(user);
 
-    const payload = { sub: savedUser.id };
+    const payload = { id: savedUser.id };
 
     return {
       access_token: await this.jwtService.signAsync(payload),

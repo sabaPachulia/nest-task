@@ -1,0 +1,1 @@
+export interface RegisterUserSuccessResponse { access_token: string }

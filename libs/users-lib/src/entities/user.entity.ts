@@ -26,19 +26,4 @@ export class User {
 
   @Column()
   password: string;
-
-  @AfterInsert()
-  logInsert() {
-    console.log(`User with ID "${this.id}" was inserted`);
-  }
-
-  @AfterUpdate()
-  logUpdate() {
-    console.log(`Update User ID "${this.id}";`);
-  }
-
-  @AfterRemove()
-  logRemove() {
-    console.log(`Remove User ID "${this.id}";`);
-  }
 }
